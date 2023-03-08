@@ -1,5 +1,5 @@
 solutionFilename = "jets_solution.txt"
-outputFilename = "jets_rules.txt"
+outputFilename = "temp/jets_rules.txt"
 
 mat = []
 with open(solutionFilename) as file:

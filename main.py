@@ -77,7 +77,7 @@ def calcIntersection(rowComponentOptionsIndices, colComponentOptionsIndices):
         addClause(colComponentOptionsIndices + [-rowOption])
 
 
-with open(r'jets_rules.txt') as file:
+with open(r'temp/jets_rules.txt') as file:
     n, m = intA(file.readline().split())
     rows = readLines(n)
     cols = readLines(m)
@@ -116,12 +116,12 @@ for r in matrix:
         calcIntersection(rowComponentOptions, colComponentOptions)
         calcIntersection(colComponentOptions, rowComponentOptions)
 
-with open('clauses.DIMACS', "w") as file:
+with open('temp/clauses.DIMACS', "w") as file:
     file.write(f"p cnf {len(componentsOptions)} {len(clauses)}\n")
     file.write("\n".join(clauses))
 
 # --------------------------
-with open("Assignments.txt") as file:
+with open("artifacts/Assignments.txt") as file:
     assignments = file.readline().split()
 
 chosen = [componentsOptions[int(x) - 1] for x in assignments if int(x) > 0]

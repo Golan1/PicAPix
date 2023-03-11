@@ -3,6 +3,9 @@ from z3 import *
 from utils import *
 from ruleUtils import *
 from tqdm import tqdm
+from imageUtils import *
+from time import time
+
 
 def freeSpace(row, n):
     s = sum(row)
@@ -74,7 +77,7 @@ def render(n, m, chosen, rows):
             break
         for i in range(rows[rowIndex][componentIndex]):
             picture[rowIndex][startingSquare + i] = True
-    drawBooleanMatrixAsBlackAndWhitePicture(picture)
+    return picture
 
 
 def createIntersectionMatrix(n, m):
@@ -88,10 +91,13 @@ def writeDimacsFile():
 
 
 if __name__ == '__main__':
+    start = time()
+    # puzzleName = "65x180_band_rules"
+    puzzleName = "jets_rules"
     # SOLVING_MECHANISM = "dimacs file"
-    # SOLVING_MECHANISM = "z3 dimacs"
-    SOLVING_MECHANISM = "z3 classic"
-    RULES_INPUT_FILENAME = r'artifacts/jets_rules.txt'
+    SOLVING_MECHANISM = "z3 dimacs"
+    # SOLVING_MECHANISM = "z3 classic"
+    RULES_INPUT_FILENAME = f'rules/{puzzleName}.txt'
     n, m, rows, cols = readRules(RULES_INPUT_FILENAME)
 
     matrix = createIntersectionMatrix(n, m)
@@ -122,8 +128,8 @@ if __name__ == '__main__':
 
     elif SOLVING_MECHANISM == 'z3 dimacs':
         writeDimacsFile()
-
         s = Solver()
+        print("reading from file")
         s.from_file('temp/clauses.dimacs')
         print(s.check())
         model = convertZ3DimacsSolverToSortedModel(s.model(), len(componentsOptions))
@@ -136,4 +142,9 @@ if __name__ == '__main__':
         raise Exception("Mechanism was not found")
 
     chosen = [componentsOptions[int(i)] for (i, b) in enumerate(model) if b]
-    render(n, m, chosen, rows)
+    drawBooleanMatrixAsBlackAndWhitePicture(render(n, m, chosen, rows))
+    writeSolution(render(n, m, chosen, rows), 30, f"solutions/{puzzleName}.png")
+
+    end = time()
+
+    print(f"total time took {end - start}")

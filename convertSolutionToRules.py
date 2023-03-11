@@ -1,15 +1,13 @@
-solutionFilename = "jets_solution.txt"
-outputFilename = "temp/jets_rules.txt"
+solutionFilename = "artifacts/jets_solution.txt"
+outputFilename = "artifacts/jets_rules.txt"
 
 mat = []
-with open(solutionFilename) as file:
-    while True:
-        line = file.readline()
-        if line == '':
-            break
-        mat.append(line)
 
-mat[0] = mat[0][3:]
+
+
+
+
+mat = readSolutionMatrix(solutionFilename)
 
 with open(outputFilename, 'w') as file:
     n = len(mat)
@@ -19,7 +17,7 @@ with open(outputFilename, 'w') as file:
         sum = 0
         res = []
         for c in row:
-            if c == '1':
+            if c == '0':
                 sum += 1
             else:
                 res.append(sum)
@@ -34,7 +32,7 @@ with open(outputFilename, 'w') as file:
         res = []
         for i in range(n):
             c = mat[i][j]
-            if c == '1':
+            if c == '0':
                 sum += 1
             else:
                 res.append(sum)

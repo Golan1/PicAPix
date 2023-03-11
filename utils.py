@@ -7,11 +7,10 @@ def readSortedModelFromExternalFile(filename):
 def convertZ3DimacsSolverToSortedModel(z3Model, nLiterals):
     arr = [False] * nLiterals
     for l in z3Model:
-        if (int(str(l)[2:]) == nLiterals):
-            print("found")
         if str(z3Model[l]) == 'True':
             arr[int(str(l)[2:]) - 1] = True
     return arr
+
 
 def createMatrix(n, m, cellInitializer):
     matrix = []
@@ -21,8 +20,9 @@ def createMatrix(n, m, cellInitializer):
             matrix[i].append(cellInitializer())
     return matrix
 
+
 def readSolutionMatrix(filename):
-    global file
+    mat = []
     with open(filename) as file:
         while True:
             line = file.readline()
@@ -31,3 +31,10 @@ def readSolutionMatrix(filename):
             mat.append(line)
     mat[0] = mat[0][3:]
     return mat
+
+def drawBooleanMatrixAsBlackAndWhitePicture(matrix):
+    for row in matrix:
+        rowStr = ""
+        for j in row:
+            rowStr += "\u2B1B" if j else "\u2B1C"
+        print(rowStr)

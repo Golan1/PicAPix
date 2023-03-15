@@ -5,6 +5,7 @@ import numpy as np
 def readSolutionMatrixFromImage(filename, n, m):
     im = iio.imread(filename).copy()
     mat = np.sum(im, 2)
+    mat = mat - np.min(mat)
     mat[mat < 50] = 0
 
     t = np.argmin(mat[:, int(mat.shape[1] / 2)])
@@ -17,8 +18,9 @@ def readSolutionMatrixFromImage(filename, n, m):
 
     sl, sw = mat.shape[0] / n, mat.shape[1] / m
 
-    if abs(sl - sw) > 2:
-        raise Exception("Diff too big")
+    diff = abs(sl - sw)
+    if diff > 2:
+        raise Exception(f"Diff too big; {diff}")
 
     res = np.zeros(shape=(n, m))
 
@@ -26,7 +28,7 @@ def readSolutionMatrixFromImage(filename, n, m):
         for j in range(m):
             x = sl * (i + 0.5)
             y = sw * (j + 0.5)
-            res[i, j] = 0 if mat[int(x), int(y)] == 0 else 1
+            res[i, j] = (1 if mat[int(x), int(y)] == 0 else 0)
     return res
 
 

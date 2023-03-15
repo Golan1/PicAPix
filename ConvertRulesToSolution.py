@@ -94,12 +94,12 @@ def writeDimacsFile():
 if __name__ == '__main__':
     start = time()
     # puzzleName = "65x180_band_rules"
-    puzzleName = "band"
+    puzzleName = "jets"
     # SOLVING_MECHANISM = "dimacs file"
     SOLVING_MECHANISM = "z3 dimacs"
     # SOLVING_MECHANISM = "z3 classic"
-    RULES_INPUT_FILENAME = f'1.rules/{puzzleName}.txt'
-    SOLUTION_OUTPUT_FILENAME = f'2.solutions/{puzzleName}.png'
+    RULES_INPUT_FILENAME = f'2.rules/{puzzleName}.txt'
+    SOLUTION_OUTPUT_FILENAME = f'3.solutions/{puzzleName}.png'
     n, m, rows, cols = readRules(RULES_INPUT_FILENAME)
 
     matrix = createIntersectionMatrix(n, m)

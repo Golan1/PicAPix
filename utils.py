@@ -21,18 +21,6 @@ def createMatrix(n, m, cellInitializer):
     return matrix
 
 
-def readSolutionMatrixFromText(filename):
-    mat = []
-    with open(filename) as file:
-        while True:
-            line = file.readline()
-            if line == '':
-                break
-            mat.append(line)
-    mat[0] = mat[0][3:]
-    return mat
-
-
 def drawBooleanMatrixAsBlackAndWhitePicture(matrix):
     for row in matrix:
         rowStr = ""

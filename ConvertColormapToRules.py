@@ -6,14 +6,25 @@ import numpy as np
 def getRowRules(row):
     sum = 0
     res = []
-    for cell in row:
-        if cell == '1' or cell == 1:
+    previousColor = 0
+    for currentColor in row:
+        if currentColor == 0:
+            if previousColor != 0:
+                res.append((str(sum), str(previousColor)))
+                sum = 0
+        elif currentColor == previousColor:
             sum += 1
+        elif previousColor == 0:
+            sum = 1
         else:
-            res.append(sum)
-            sum = 0
-    res.append(sum)
-    return f"{' '.join([str(x) + ',1' for x in res if x != 0])}"
+            res.append((str(sum), str(previousColor)))
+            sum = 1
+        previousColor = currentColor
+
+    if sum != 0:
+        res.append((str(sum), str(previousColor)))
+
+    return " ".join([",".join(component) for component in res])
 
 
 def getRowsRules(mat):
@@ -34,8 +45,7 @@ if __name__ == '__main__':
     c = np.max(mat)
 
     with open(outputFilename, 'w') as file:
-        file.write(f"{n} {m}\n")
+        file.write(f"{n} {m} {c}\n")
         file.write("\n".join(getRowsRules(mat)))
         file.write("\n")
         file.write("\n".join(getRowsRules(np.transpose(mat))))
-

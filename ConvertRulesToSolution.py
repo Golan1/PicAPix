@@ -10,6 +10,7 @@ from dataclasses import dataclass
 
 @dataclass
 class ComponentOption:
+    isRow: bool
     rowIndex: int
     indexInRow: int
     startingLocation: int
@@ -26,7 +27,7 @@ def freeSpace(row, n):
     return n - sum(x[0] for x in row) - adjacents + 1
 
 
-def calcComponentsOptions(rowIndex, row, freeSpace, componentOptionAddedObserver):
+def calcComponentsOptions(rowIndex, row, freeSpace, componentOptionAddedObserver, isRow):
     componentStartingPoint = 0
     previousColor = 0
     for componentIndexInRow, (componentLength, componentColor) in enumerate(row):
@@ -35,7 +36,7 @@ def calcComponentsOptions(rowIndex, row, freeSpace, componentOptionAddedObserver
         sameComponentOptions = []
         for indexInComponentOption in range(freeSpace):
             componentsOptions.append(
-                ComponentOption(rowIndex, componentIndexInRow, componentStartingPoint + indexInComponentOption,
+                ComponentOption(isRow, rowIndex, componentIndexInRow, componentStartingPoint + indexInComponentOption,
                                 componentLength, componentColor))
             myGeneralIndex = len(componentsOptions)
             for l in range(componentLength):
@@ -82,9 +83,6 @@ def render(n, m, chosen: list[ComponentOption]):
     colorMap = np.zeros(shape=(n, m), dtype=int)
 
     for row in chosen:
-        # since we don't care about columns when painting
-        if row.rowIndex >= n:
-            break
         colorMap[row.rowIndex, row.startingLocation: row.startingLocation + row.length] = row.color
     return colorMap
 
@@ -101,7 +99,7 @@ def writeDimacsFile():
 
 if __name__ == '__main__':
     start = time()
-    puzzleName = "barvaz"
+    puzzleName = "band"
     SOLVING_MECHANISM = "z3 dimacs"
     # SOLVING_MECHANISM = "z3 classic"
     RULES_INPUT_FILENAME = f'2.rules/{puzzleName}.txt'
@@ -114,17 +112,16 @@ if __name__ == '__main__':
     componentsOptions = []
 
     for i, row in enumerate(rows):
-        calcComponentsOptions(i, row, freeSpace(row, m), partial(rowComponentOptionAdder, i))
+        calcComponentsOptions(i, row, freeSpace(row, m), partial(rowComponentOptionAdder, i), True)
 
     for j, col in enumerate(cols):
-        calcComponentsOptions(n + j, col, freeSpace(col, n), partial(colComponentOptionAdder, j))
+        calcComponentsOptions(j, col, freeSpace(col, n), partial(colComponentOptionAdder, j), False)
 
-    for colors in intersectionMatrix:
-        for color in colors:
-            for rowComponentOptions, colComponentOptions in color:
-                if len(rowComponentOptions) > 0 and len(colComponentOptions) > 0:
-                    calcIntersection(rowComponentOptions, colComponentOptions)
-                    calcIntersection(colComponentOptions, rowComponentOptions)
+    for row in intersectionMatrix:
+        for cell in row:
+            for rowComponentOptions, colComponentOptions in cell:
+                calcIntersection(rowComponentOptions, colComponentOptions)
+                calcIntersection(colComponentOptions, rowComponentOptions)
 
     if SOLVING_MECHANISM == 'z3 classic':
         s = Solver()
@@ -150,9 +147,14 @@ if __name__ == '__main__':
         raise Exception("Mechanism was not found")
 
     chosen = [componentsOptions[int(i)] for (i, b) in enumerate(model) if b]
-    colorMap = render(n, m, chosen)
-    drawBooleanMatrixAsBlackAndWhitePicture(colorMap)
-    writeSolution(colorMap, 30, SOLUTION_OUTPUT_FILENAME)
+
+    colorMapAccordingToRows = render(n, m, [row for row in chosen if row.isRow])
+    writeSolution(colorMapAccordingToRows, 30, SOLUTION_OUTPUT_FILENAME)
+
+    if False:
+        # drawBooleanMatrixAsBlackAndWhitePicture(colorMapAccordingToRows)
+        colorMapAccordingToCols = np.transpose(render(m, n, [row for row in chosen if not row.isRow]))
+        writeSolution(colorMapAccordingToCols, 30,  f'3.solutions/{puzzleName}_cols.png')
 
     end = time()
 

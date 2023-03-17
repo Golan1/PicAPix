@@ -1,6 +1,8 @@
 import imageio.v3 as iio
 import numpy as np
 
+colorPalette = [(255, 255, 255), (0, 0, 0), (255, 0, 0)]
+
 
 def readSolutionMatrixFromImage(filename, n, m):
     im = iio.imread(filename).copy()
@@ -35,9 +37,9 @@ def readSolutionMatrixFromImage(filename, n, m):
 def writeSolution(mat, squareLength, filename):
     n = len(mat) * squareLength
     m = len(mat[0]) * squareLength
-    im = np.zeros(shape=(n, m, 3), dtype="uint8")
+    im = np.ones(shape=(n, m, 3), dtype="uint8") * 255
     for i in range(len(mat)):
         for j in range(len(mat[0])):
-            if not mat[i][j]:
-                im[i * squareLength: (i + 1) * squareLength, j * squareLength: (j + 1) * squareLength, :] = 255
+            im[i * squareLength: (i + 1) * squareLength, j * squareLength: (j + 1) * squareLength] = colorPalette[
+                mat[i][j]]
     iio.imwrite(filename, im)

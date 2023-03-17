@@ -12,53 +12,63 @@ from dataclasses import dataclass
 class ComponentOption:
     rowIndex: int
     indexInRow: int
-    indexInOptions: int
+    startingLocation: int
     length: int
     color: int
 
 
 def freeSpace(row, n):
-    s = sum(row)
-    s += len(row) - 1
-    return n - s + 1
+    adjacents = 0
+    for x, y in zip(row[:-1], row[1:]):
+        # same color
+        if x[1] == y[1]:
+            adjacents += 1
+    return n - sum(x[0] for x in row) - adjacents + 1
 
 
-def calcComponentsOptions(index, row, f, componentOptionAddedObserver):
-    prefix = 0
-    for componentIndexInRow, componentLength in enumerate(row):
+def calcComponentsOptions(rowIndex, row, freeSpace, componentOptionAddedObserver):
+    componentStartingPoint = 0
+    previousColor = 0
+    for componentIndexInRow, (componentLength, componentColor) in enumerate(row):
+        if previousColor == componentColor:
+            componentStartingPoint += 1
         sameComponentOptions = []
-        for i in range(f):
-            componentsOptions.append((index, componentIndexInRow, prefix + i))
+        for indexInComponentOption in range(freeSpace):
+            componentsOptions.append(
+                ComponentOption(rowIndex, componentIndexInRow, componentStartingPoint + indexInComponentOption,
+                                componentLength, componentColor))
             myGeneralIndex = len(componentsOptions)
             for l in range(componentLength):
-                componentOptionAddedObserver(myGeneralIndex, prefix + i + l)
+                componentOptionAddedObserver(myGeneralIndex, componentStartingPoint + indexInComponentOption + l,
+                                             componentColor)
             sameComponentOptions.append(myGeneralIndex)
 
-            for j in range(1, i + 1):
+            for j in range(1, indexInComponentOption + 1):
                 clauses.append([
                     -myGeneralIndex,
                     -(myGeneralIndex - j)])  # promises AT MOST one option for the component.
 
             # except for the first component
-            if componentIndexInRow == 0:
-                continue
+            if componentIndexInRow != 0:
+                numOfCollisions = freeSpace - indexInComponentOption
 
-            for j in range(1, f - i):
-                clauses.append([
-                    -myGeneralIndex,
-                    -(myGeneralIndex - f + j)])  # promises no collisions between neighboring component's options
+                # promises no collisions between neighboring component's options
+                for j in range(1, numOfCollisions):
+                    clauses.append([
+                        -myGeneralIndex,
+                        -(myGeneralIndex - freeSpace + j)])
 
         clauses.append(sameComponentOptions)  # promises that AT LEAST one option for the component.
-
-        prefix += componentLength + 1
-
-
-def rowComponentOptionAdder(rowIndex, generalIndex, colIndex):
-    matrix[rowIndex][colIndex][0].append(generalIndex)
+        previousColor = componentColor
+        componentStartingPoint += componentLength
 
 
-def colComponentOptionAdder(colIndex, generalIndex, rowIndex):
-    matrix[rowIndex][colIndex][1].append(generalIndex)
+def rowComponentOptionAdder(rowIndex, generalIndex, colIndex, color):
+    intersectionMatrix[rowIndex][colIndex][color - 1][0].append(generalIndex)
+
+
+def colComponentOptionAdder(colIndex, generalIndex, rowIndex, color):
+    intersectionMatrix[rowIndex][colIndex][color - 1][1].append(generalIndex)
 
 
 # Ensuring that if a rowOption is chosen, a respective col option is chosen as well
@@ -68,21 +78,20 @@ def calcIntersection(rowComponentOptionsIndices, colComponentOptionsIndices):
         clauses.append(colComponentOptionsIndices + [-rowOption])
 
 
-def render(n, m, chosen, rows):
-    picture = createMatrix(n, m, lambda: False)
+def render(n, m, chosen: list[ComponentOption]):
+    picture = createMatrix(n, m, lambda: 0)
 
     for row in chosen:
-        rowIndex, componentIndex, startingSquare = row
         # since we don't care about columns when painting
-        if rowIndex >= n:
+        if row.rowIndex >= n:
             break
-        for i in range(rows[rowIndex][componentIndex]):
-            picture[rowIndex][startingSquare + i] = True
+        for i in range(row.length):
+            picture[row.rowIndex][row.startingLocation + i] = row.color
     return picture
 
 
-def createIntersectionMatrix(n, m):
-    return createMatrix(n, m, lambda: ([], []))
+def createIntersectionMatrix(n, m, c):
+    return createMatrix(n, m, lambda: createMatrix(c, 2, lambda: []))
 
 
 def writeDimacsFile():
@@ -93,16 +102,15 @@ def writeDimacsFile():
 
 if __name__ == '__main__':
     start = time()
-    # puzzleName = "65x180_band_rules"
-    puzzleName = "jets"
-    # SOLVING_MECHANISM = "dimacs file"
+    puzzleName = "band"
     SOLVING_MECHANISM = "z3 dimacs"
     # SOLVING_MECHANISM = "z3 classic"
     RULES_INPUT_FILENAME = f'2.rules/{puzzleName}.txt'
     SOLUTION_OUTPUT_FILENAME = f'3.solutions/{puzzleName}.png'
-    n, m, rows, cols = readRules(RULES_INPUT_FILENAME)
 
-    matrix = createIntersectionMatrix(n, m)
+    n, m, c, rows, cols = readRules(RULES_INPUT_FILENAME)
+
+    intersectionMatrix = createIntersectionMatrix(n, m, c)
     clauses = []
     componentsOptions = []
 
@@ -112,10 +120,12 @@ if __name__ == '__main__':
     for j, col in enumerate(cols):
         calcComponentsOptions(n + j, col, freeSpace(col, n), partial(colComponentOptionAdder, j))
 
-    for r in matrix:
-        for rowComponentOptions, colComponentOptions in r:
-            calcIntersection(rowComponentOptions, colComponentOptions)
-            calcIntersection(colComponentOptions, rowComponentOptions)
+    for colors in intersectionMatrix:
+        for color in colors:
+            for rowComponentOptions, colComponentOptions in color:
+                if len(rowComponentOptions) > 0 and len(colComponentOptions) > 0:
+                    calcIntersection(rowComponentOptions, colComponentOptions)
+                    calcIntersection(colComponentOptions, rowComponentOptions)
 
     if SOLVING_MECHANISM == 'z3 classic':
         s = Solver()
@@ -133,20 +143,18 @@ if __name__ == '__main__':
         s = Solver()
         print("reading from file")
         s.from_file('temp/clauses.dimacs')
+        print("solving formula")
         print(s.check())
         model = convertZ3DimacsSolverToSortedModel(s.model(), len(componentsOptions))
 
-    elif SOLVING_MECHANISM == 'dimacs file':
-        writeDimacsFile()
-        # stop here and fill manually assignments.txt using http://logicrunch.it.uu.se:4096/~wv/minisat/
-        model = readSortedModelFromExternalFile("artifacts/assignments.txt")
     else:
         raise Exception("Mechanism was not found")
 
     chosen = [componentsOptions[int(i)] for (i, b) in enumerate(model) if b]
-    drawBooleanMatrixAsBlackAndWhitePicture(render(n, m, chosen, rows))
-    writeSolution(render(n, m, chosen, rows), 30, SOLUTION_OUTPUT_FILENAME)
+    colorMap = render(n, m, chosen)
+    drawBooleanMatrixAsBlackAndWhitePicture(colorMap)
+    writeSolution(colorMap, 30, SOLUTION_OUTPUT_FILENAME)
 
     end = time()
 
-    print(f"total time took {end - start}")
+    print(f"total time: {end - start}")

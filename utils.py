@@ -1,9 +1,3 @@
-def readSortedModelFromExternalFile(filename):
-    with open(filename) as file:
-        assignments = file.readline().split()
-    return [True if int(x) > 0 else False for x in assignments]
-
-
 def convertZ3DimacsSolverToSortedModel(z3Model, nLiterals):
     arr = [False] * nLiterals
     for l in z3Model:

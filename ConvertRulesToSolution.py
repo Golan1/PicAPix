@@ -79,15 +79,14 @@ def calcIntersection(rowComponentOptionsIndices, colComponentOptionsIndices):
 
 
 def render(n, m, chosen: list[ComponentOption]):
-    picture = createMatrix(n, m, lambda: 0)
+    colorMap = np.zeros(shape=(n, m), dtype=int)
 
     for row in chosen:
         # since we don't care about columns when painting
         if row.rowIndex >= n:
             break
-        for i in range(row.length):
-            picture[row.rowIndex][row.startingLocation + i] = row.color
-    return picture
+        colorMap[row.rowIndex, row.startingLocation: row.startingLocation + row.length] = row.color
+    return colorMap
 
 
 def createIntersectionMatrix(n, m, c):
@@ -102,7 +101,7 @@ def writeDimacsFile():
 
 if __name__ == '__main__':
     start = time()
-    puzzleName = "band"
+    puzzleName = "jets"
     SOLVING_MECHANISM = "z3 dimacs"
     # SOLVING_MECHANISM = "z3 classic"
     RULES_INPUT_FILENAME = f'2.rules/{puzzleName}.txt'

@@ -1,7 +1,7 @@
 import imageio.v3 as iio
 import numpy as np
 
-colorPalette = [(255, 255, 255), (0, 0, 0), (255, 0, 0)]
+defaultColorPalette = [(255, 255, 255), (255, 220, 0), (255, 181, 202), (0, 160, 0), (160, 103, 0), (255, 147, 0)]
 
 def cropWhiteBackground(im):
     mat = np.sum(im, 2)
@@ -14,9 +14,10 @@ def cropWhiteBackground(im):
     l = np.argmin(mat[int(mat.shape[0] / 2), :])
     r = mat.shape[1] - np.argmin(mat[int(mat.shape[0] / 2), :][::-1])
 
-    mat = mat[t:b, l:r]
+    if im.shape[2] == 4:
+        return np.delete(im[t:b, l:r], 3, axis=2)
 
-    return mat
+    return im[t:b, l:r]
 
 
 def convertImageToColorMap(filename, n, m):
@@ -24,25 +25,27 @@ def convertImageToColorMap(filename, n, m):
 
     sl, sw = getSquareDimensions(im, m, n)
 
-
     res = np.zeros(shape=(n, m))
 
-    # maps the SUM of the pixel's RGB to a color index. This might not be a refined enough clustering (for example, RED and GREEN are mapped to the same colorIndex)
-    RGBtoColorIndex = np.ones(766, dtype=int) * -1
+    RGBtoColorIndex = np.ones(shape=(256, 256, 256), dtype=int) * -1
     tolerance = 20
-    RGBtoColorIndex[765-tolerance:] = 0
-    colorsCount = 1
+    RGBtoColorIndex[255 - tolerance:, 255 - tolerance:, 255 - tolerance:] = 0
+    colorIndexToRGB = [(255, 255, 255)]
 
     for i in range(n):
         for j in range(m):
             rgb = im[int(sl * (i + 0.5)), int(sw * (j + 0.5))]
-            colorIndex = RGBtoColorIndex[rgb]
+            colorIndex = RGBtoColorIndex[rgb[0], rgb[1], rgb[2]]
             if colorIndex == -1:
-                colorIndex = colorsCount
-                RGBtoColorIndex[max(0, rgb - tolerance): min(RGBtoColorIndex.shape[0], rgb + tolerance)] = colorIndex
-                colorsCount += 1
+                colorIndex = len(colorIndexToRGB)
+                RGBtoColorIndex[
+                max(0, rgb[0] - tolerance): min(256, rgb[0] + tolerance),
+                max(0, rgb[1] - tolerance): min(256, rgb[1] + tolerance),
+                max(0, rgb[2] - tolerance): min(256, rgb[2] + tolerance)] = colorIndex
+                colorIndexToRGB.append(tuple(rgb))
             res[i, j] = colorIndex
-    print(colorsCount)
+    print(colorIndexToRGB)
+
     return res
 
 
@@ -60,6 +63,7 @@ def writeSolution(mat, squareLength, filename):
     im = np.ones(shape=(n * squareLength, m * squareLength, 3), dtype="uint8") * 255
     for i in range(n):
         for j in range(m):
-            im[i * squareLength: (i + 1) * squareLength, j * squareLength: (j + 1) * squareLength] = colorPalette[
-                mat[i, j]]
+            im[i * squareLength: (i + 1) * squareLength, j * squareLength: (j + 1) * squareLength] = \
+                defaultColorPalette[
+                    mat[i, j]]
     iio.imwrite(filename, im)

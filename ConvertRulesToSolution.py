@@ -99,7 +99,7 @@ def writeDimacsFile():
 
 if __name__ == '__main__':
     start = time()
-    puzzleName = "band"
+    puzzleName = "flowers"
     SOLVING_MECHANISM = "z3 dimacs"
     # SOLVING_MECHANISM = "z3 classic"
     RULES_INPUT_FILENAME = f'2.rules/{puzzleName}.txt'

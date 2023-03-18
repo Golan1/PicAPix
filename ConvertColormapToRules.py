@@ -33,7 +33,7 @@ def getRowsRules(mat):
 
 
 if __name__ == '__main__':
-    filename = "barvaz.txt"
+    filename = "flowers.txt"
     colormapFilename = '1.colormap/' + filename
     outputFilename = '2.rules/' + filename
 
